@@ -9,11 +9,11 @@ import mne
 import numpy as np
 import pandas as pd
 from scipy.signal import detrend
-import torch
 from typing import List
 import tempfile
 import subprocess
 import h5py
+import time
 
 
 
@@ -148,10 +148,9 @@ def process_file(edf_file, export_dir, new_filename, logger, format, delete=Fals
         logger.info(f"File already processed. Skipping {new_filename}")
         return
     try:
-        with preprocess_eeg(str(edf_file), logger) as preprocessed_data:
-            data_tensor = torch.tensor(preprocessed_data.get_data())
+        with preprocess_eeg(str(edf_file), logger) as preprocessed:
             # Full path for the preprocessed file
-            save_preprocessed_data(data_tensor, export_dir / f"{new_filename}.gz", format=format)
+            save_preprocessed_data(preprocessed, export_dir / f"{new_filename}", logger, format=format)
         if delete:
             os.remove(edf_file)
     except Exception as e:
@@ -179,11 +178,11 @@ def save_to_npy(raw, output_path, logger):
     np.save(output_path, raw.get_data())
     logger.info(f"Saved NumPy file: {output_path}")
 
-def save_preprocessed_data(raw, output_path, format='h5'):
+def save_preprocessed_data(raw, output_path, logger, format='npy'):
     if format == 'h5':
-        save_to_hdf5(raw, output_path)
+        save_to_hdf5(raw, output_path, logger)
     elif format == 'npy':
-        save_to_npy(raw, output_path)
+        save_to_npy(raw, output_path, logger)
     # elif format == 'tfrecord':
     #     save_to_tfrecord(raw, output_path)
     # elif format == 'parquet':
@@ -193,7 +192,7 @@ def save_preprocessed_data(raw, output_path, format='h5'):
     else:
         raise ValueError(f"Unsupported format: {format}")
 
-def process_and_save(args=None, data_root=None, export_dir=None, logger=None, delete=False, format='npy'):
+def process_and_save(args=None, data_root=None, export_dir=None, logger=None, delete=False):
     if args:
         data_root, export_dir = args.data_root, args.export_dir
 
@@ -203,6 +202,8 @@ def process_and_save(args=None, data_root=None, export_dir=None, logger=None, de
     data_root_path = Path(data_root)
     export_root_path = Path(export_dir)
 
+    files_processed = 0
+    start_time = time.time()
     for div in os.listdir(data_root_path):
         div_path = os.path.join(data_root_path, div)
         for subject_num in os.listdir(div_path):
@@ -217,10 +218,18 @@ def process_and_save(args=None, data_root=None, export_dir=None, logger=None, de
                             edf_file = os.path.join(montage_path, file)
                             token = file[-8:-4]
                             file_pref = f"{subject_num}_{session}_{token}_{montage}"
-                            file_suf = ".pt"
+                            file_suf = ".npy"
                             new_file_nm = file_pref + file_suf
-                            process_file(edf_file, export_dir, new_file_nm, logger, delete)
-            ...
+                            print(f"edf_file_to_process: {edf_file}")
+                            process_file(edf_file=edf_file, export_dir=export_dir, new_filename=new_file_nm,
+                                         logger=logger, format='npy', delete=False)
+                            # process_file(edf_file, export_dir, new_file_nm, logger, delete)
+                            files_processed += 1
+    end_time = time.time()
+    time_elapsed = end_time - start_time
+    logger.info(f"{files_processed} processsed in {time_elapsed} seconds.")
+    logger.info(f"Average time to process: {(time_elapsed / files_processed):.3}s per file.")
+
         # subject_path = data_root_path / subject_num
         # # Adapted pattern to match 'sNNN_YYYY'
         # for session_dir in subject_path.rglob('s*_*'):
@@ -238,13 +247,14 @@ def process_and_save(args=None, data_root=None, export_dir=None, logger=None, de
 
 
 if __name__ == "__main__":
-    edfs = []
-    for dir_path, dirs, files in os.walk("../data/edf"):
-        for file in files:
-            if os.path.isfile(Path(dir_path) / file):
-                edfs.append(file)
-    print(len(edfs))
-    print(edfs[:20])
+    ...
+    # edfs = []
+    # for dir_path, dirs, files in os.walk("../data/np"):
+    #     for file in files:
+    #         if os.path.isfile(Path(dir_path) / file):
+    #             data = np.load(Path(dir_path) / file)
+    #             print(data.shape)
+
 
 
 
@@ -255,10 +265,11 @@ if __name__ == "__main__":
     # parser.add_argument("--export-dir", required=True, help="Directory where the preprocessed data will be saved.")
     # parser.add_argument("--filename-csv", default="../inputs/sub_list2.csv", help="CSV file containing the list of filenames to process.")
     #
-    # # Configure logging
+    # Configure logging
     # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     # logger = logging.getLogger(__name__)
-    #
+    # process_and_save(data_root="../data/edf", export_dir="../data/np", logger=logger)
+
     # data_root= "../data/edf"
     # export_dir = "../data/pt"
     # # new_name = f"aaaaaaaa_s001_2015_{eeg_file[-8:-4]}_01_tcp_ar.pt"
