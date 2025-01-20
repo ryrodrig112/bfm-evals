@@ -14,7 +14,7 @@ import tempfile
 import subprocess
 import h5py
 import time
-
+import shutil
 
 
 
@@ -152,7 +152,7 @@ def process_file(edf_file, export_dir, new_filename, logger, format, delete=Fals
             # Full path for the preprocessed file
             save_preprocessed_data(preprocessed, export_dir / f"{new_filename}", logger, format=format)
         if delete:
-            os.remove(edf_file)
+            shutil.remove(edf_file)
     except Exception as e:
         # raise e
         logger.error(f"Error processing {edf_file}: {e}")
@@ -223,8 +223,11 @@ def process_and_save(args=None, data_root=None, export_dir=None, logger=None, de
                             print(f"edf_file_to_process: {edf_file}")
                             process_file(edf_file=edf_file, export_dir=export_dir, new_filename=new_file_nm,
                                          logger=logger, format='npy', delete=False)
+
                             # process_file(edf_file, export_dir, new_file_nm, logger, delete)
                             files_processed += 1
+                    if delete:
+                        shutil.rmtree(montage_path)
     end_time = time.time()
     time_elapsed = end_time - start_time
     logger.info(f"{files_processed} processsed in {time_elapsed} seconds.")
