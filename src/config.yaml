@@ -1,0 +1,38 @@
+data:
+  train_dir: "/Users/ryanrodriguez/Documents/Work/EEG2/data/pt/train_data"
+  val_dir: "/Users/ryanrodriguez/Documents/Work/EEG2/data/pt/val_data"
+  batch_size: 5
+  shuffle: true
+  num_workers: 0
+
+
+model:
+  encoder:
+    n_chans: 20
+    n_times: 500
+  embedder:
+    in_dim: 1080
+  unembedder:
+    out_dim: 1080
+
+training:
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_epochs: 20
+  smoketest: True
+
+
+logging:
+  log_interval: 1
+  save_model: true
+  tb_dir: "/Users/ryanrodriguez/Documents/Work/EEG2/runs"
+  model_checkpt_dir: "/Users/ryanrodriguez/Documents/Work/EEG2/src/checkpoints/"
+
+loading:
+  from_scratch: True
+  pretrained_checkpoint_dir: "2025-01-16_16-10-20"
+  pretrained_model_path: "/Users/ryanrodriguez/Documents/Work/EEG2/src/checkpoints/2025-01-16_16-10-20/model_checkpoint_epoch4.pth"
+  start_at_epoch: 4
+
+
+
