@@ -59,7 +59,7 @@ class EEGDataset(Dataset):
 
     def __getitem__(self, idx):
         try:
-            data = self.load_tensor(self.filenames[idx])
+            data = self.load_npy(self.filenames[idx])
             #===reorder channels====
             data = self.reorder_channels(data)
             data = self.preprocess_sample(data, seq_len=self.num_chunks)
@@ -101,6 +101,11 @@ class EEGDataset(Dataset):
             tensor_data = torch.zeros((20,1))
 
         return tensor_data.numpy()
+
+    def load_npy(self, filename):
+        data = np.load(filename)
+        return data
+
 
     def reorder_channels(self, data):
         chann_labels = {'FP1': 0, 'FP2': 1, 'F3': 2, 'F4': 3, 'C3': 4, 'C4': 5, 'P3': 6, 'P4': 7, 'O1': 8, 'O2': 9, 'F7': 10, 'F8': 11, 'T3': 12, 'T4': 13, 'T5': 14, 'T6': 15, 'FZ': 16, 'CZ': 17, 'PZ': 18, 'OZ': 19}
