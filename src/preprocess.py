@@ -146,16 +146,17 @@ def process_file(edf_file, export_dir, new_filename, logger, format, delete=Fals
     # define the new filename
     if os.path.isfile(export_dir / new_filename):
         logger.info(f"File already processed. Skipping {new_filename}")
-        return
-    try:
-        with preprocess_eeg(str(edf_file), logger) as preprocessed:
-            # Full path for the preprocessed file
-            save_preprocessed_data(preprocessed, export_dir / f"{new_filename}", logger, format=format)
-        if delete:
-            shutil.remove(edf_file)
-    except Exception as e:
-        # raise e
-        logger.error(f"Error processing {edf_file}: {e}")
+    else:
+        try:
+            with preprocess_eeg(str(edf_file), logger) as preprocessed:
+                # Full path for the preprocessed file
+                save_preprocessed_data(preprocessed, export_dir / f"{new_filename}", logger, format=format)
+
+        except Exception as e:
+            # raise e
+            logger.error(f"Error processing {edf_file}: {e}")
+    if delete:
+        os.remove(edf_file)
 
 # def process_subject(subject_path, filenames_to_process, file_prefix):
 #     for edf_file in subject_path.rglob('*.edf'):
@@ -222,16 +223,18 @@ def process_and_save(args=None, data_root=None, export_dir=None, logger=None, de
                             new_file_nm = file_pref + file_suf
                             print(f"edf_file_to_process: {edf_file}")
                             process_file(edf_file=edf_file, export_dir=export_dir, new_filename=new_file_nm,
-                                         logger=logger, format='npy', delete=False)
+                                         logger=logger, format='npy', delete=delete)
 
                             # process_file(edf_file, export_dir, new_file_nm, logger, delete)
                             files_processed += 1
-                    if delete:
-                        shutil.rmtree(montage_path)
+                    if delete == True:
+                        os.removedirs(montage_path)
     end_time = time.time()
     time_elapsed = end_time - start_time
     logger.info(f"{files_processed} processsed in {time_elapsed} seconds.")
-    logger.info(f"Average time to process: {(time_elapsed / files_processed):.3}s per file.")
+    if files_processed > 0:
+        logger.info(f"Average time to process: {(time_elapsed / (files_processed)):.3}s per file.")
+
 
         # subject_path = data_root_path / subject_num
         # # Adapted pattern to match 'sNNN_YYYY'
@@ -268,15 +271,15 @@ if __name__ == "__main__":
     # parser.add_argument("--export-dir", required=True, help="Directory where the preprocessed data will be saved.")
     # parser.add_argument("--filename-csv", default="../inputs/sub_list2.csv", help="CSV file containing the list of filenames to process.")
     #
-    # Configure logging
-    # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    # logger = logging.getLogger(__name__)
-    # process_and_save(data_root="../data/edf", export_dir="../data/np", logger=logger)
+    #Configure logging
+
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
+    process_and_save(data_root="../data/edf", export_dir="../data/np", logger=logger, delete=True)
 
     # data_root= "../data/edf"
     # export_dir = "../data/pt"
     # # new_name = f"aaaaaaaa_s001_2015_{eeg_file[-8:-4]}_01_tcp_ar.pt"
-    # process_and_save(data_root=data_root, export_dir=export_dir, logger=logger)
     #
     # args = parser.parse_args()
     #
